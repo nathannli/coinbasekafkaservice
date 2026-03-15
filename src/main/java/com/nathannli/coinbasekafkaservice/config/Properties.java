@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.stereotype.Component;
 
 /**
  * Configuration for the Coinbase WebSocket feed. All properties are mandatory and
@@ -17,8 +18,9 @@ import org.springframework.validation.annotation.Validated;
  * Missing or blank values will cause application startup to fail.
  */
 @Validated
+@Component
 @ConfigurationProperties(prefix = "app.coinbase")
-public class CoinbaseProperties {
+public class Properties {
 
     @NotBlank(message = "app.coinbase.ws-url is mandatory")
     private String wsUrl;
