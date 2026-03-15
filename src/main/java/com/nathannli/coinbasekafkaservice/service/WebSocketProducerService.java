@@ -44,63 +44,7 @@ public class WebSocketProducerService {
 
         try {
             WebSocket webSocket = client.newWebSocketBuilder()
-                .buildAsync(URI.create(wsUrl), new WebSocket.Listener() {
-                    private final StringBuilder buffer = new StringBuilder();
-
-                    @Override
-                    public void onOpen(WebSocket webSocket) {
-                        logger.info("WebSocket connected to {}", wsUrl);
-                        try {
-                            String subscribe = objectMapper.writeValueAsString(Map.of(
-                                    "type", "subscribe",
-                                    "product_ids", properties.getProductIds(),
-                                    "channels", List.of("matches")));
-                            webSocket.sendText(subscribe, true);
-                            logger.debug("Sent subscribe: {}", subscribe);
-                        } catch (Exception e) {
-                            logger.error("Failed to send subscribe", e);
-                            throw new RuntimeException(e);
-                        }
-                        webSocket.request(1);
-                    }
-
-                    @Override
-                    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-                        buffer.append(data);
-                        if (last) {
-                            String msg = buffer.toString();
-                            buffer.setLength(0);
-
-                            try {
-                                JsonNode json = objectMapper.readTree(msg);
-                                JsonNode typeNode = json.path("type");
-                                if (!typeNode.isMissingNode() && "match".equals(typeNode.asText())) {
-                                    String key = json.path("product_id").asText();
-                                    kafkaTemplate.send(properties.getTopic(), key, msg);
-                                    logger.debug("Sent match to Kafka: product_id={}", key);
-                                }
-                            } catch (Exception e) {
-                                logger.warn("Error processing message: {}", e.getMessage());
-                            }
-                        }
-
-                        webSocket.request(1);
-                        return null;
-                    }
-
-                    @Override
-                    public void onError(WebSocket webSocket, Throwable error) {
-                        logger.error("WebSocket error", error);
-                        closeLatch.countDown();
-                    }
-
-                    @Override
-                    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-                        logger.warn("WebSocket closed: statusCode={}, reason={}", statusCode, reason);
-                        closeLatch.countDown();
-                        return null;
-                    }
-                })
+                .buildAsync(URI.create(wsUrl), createListener(wsUrl))
                 .join();
 
             currentWebSocket.set(webSocket);
@@ -111,6 +55,73 @@ public class WebSocketProducerService {
             Thread.currentThread().interrupt();
             logger.warn("WebSocket service interrupted while waiting for shutdown");
         }
+    }
+
+    String buildSubscribeMessage() throws Exception {
+        return objectMapper.writeValueAsString(Map.of(
+                "type", "subscribe",
+                "product_ids", properties.getProductIds(),
+                "channels", List.of("matches")));
+    }
+
+    void handleMessage(String msg) {
+        try {
+            JsonNode json = objectMapper.readTree(msg);
+            JsonNode typeNode = json.path("type");
+            if (!typeNode.isMissingNode() && "match".equals(typeNode.asText())) {
+                String key = json.path("product_id").asText();
+                kafkaTemplate.send(properties.getTopic(), key, msg);
+                logger.debug("Sent match to Kafka: product_id={}", key);
+            }
+        } catch (Exception e) {
+            logger.warn("Error processing message: {}", e.getMessage());
+        }
+    }
+
+    WebSocket.Listener createListener(String wsUrl) {
+        return new WebSocket.Listener() {
+            private final StringBuilder buffer = new StringBuilder();
+
+            @Override
+            public void onOpen(WebSocket webSocket) {
+                logger.info("WebSocket connected to {}", wsUrl);
+                try {
+                    String subscribe = buildSubscribeMessage();
+                    webSocket.sendText(subscribe, true);
+                    logger.debug("Sent subscribe: {}", subscribe);
+                } catch (Exception e) {
+                    logger.error("Failed to send subscribe", e);
+                    throw new RuntimeException(e);
+                }
+                webSocket.request(1);
+            }
+
+            @Override
+            public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                buffer.append(data);
+                if (last) {
+                    String msg = buffer.toString();
+                    buffer.setLength(0);
+                    handleMessage(msg);
+                }
+
+                webSocket.request(1);
+                return null;
+            }
+
+            @Override
+            public void onError(WebSocket webSocket, Throwable error) {
+                logger.error("WebSocket error", error);
+                closeLatch.countDown();
+            }
+
+            @Override
+            public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+                logger.warn("WebSocket closed: statusCode={}, reason={}", statusCode, reason);
+                closeLatch.countDown();
+                return null;
+            }
+        };
     }
 
     @PreDestroy
