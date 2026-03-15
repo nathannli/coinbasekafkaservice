@@ -1,15 +1,15 @@
 package com.nathannli.coinbasekafkaservice.startup;
 
-import com.nathannli.coinbasekafkaservice.service.WebSocketService;
+import com.nathannli.coinbasekafkaservice.service.WebSocketProducerService;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Component;
 
 @Component
 public class StartupRunner implements ApplicationRunner {
-    private final WebSocketService service;
+    private final WebSocketProducerService service;
 
-    public StartupRunner(WebSocketService service) {
+    public StartupRunner(WebSocketProducerService service) {
         this.service = service;
     }
 
@@ -18,4 +18,3 @@ public class StartupRunner implements ApplicationRunner {
         service.start();
     }
 }
-

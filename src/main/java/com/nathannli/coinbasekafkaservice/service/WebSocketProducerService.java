@@ -20,15 +20,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Service
-public class WebSocketService {
-    private final AppLogger logger = new AppLogger(WebSocketService.class);
+public class WebSocketProducerService {
+    private final AppLogger logger = new AppLogger(WebSocketProducerService.class);
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final Properties properties;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AtomicReference<WebSocket> currentWebSocket = new AtomicReference<>();
     private final CountDownLatch closeLatch = new CountDownLatch(1);
 
-    public WebSocketService(
+    public WebSocketProducerService(
             KafkaTemplate<String, String> kafkaTemplate,
             Properties properties) {
         this.kafkaTemplate = kafkaTemplate;
