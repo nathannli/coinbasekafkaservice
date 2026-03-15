@@ -23,22 +23,27 @@ This formats storage and starts a standalone KRaft broker on `localhost:9092`.
 
 ### 2. Configure the Application
 
-Set the following properties in `src/main/resources/application.properties`:
+Configuration is split by profile. Edit `application-dev.properties` or `application-prod.properties` under `src/main/resources/` as needed. Required properties:
 
-```properties
-app.coinbase.ws-url=wss://advanced-trade-ws.coinbase.com
-app.coinbase.topic=coinbase-matches
-app.coinbase.product-ids=BTC-USD,ETH-USD
+- `app.coinbase.ws-url` — Coinbase WebSocket URL
+- `app.coinbase.topic` — Kafka topic for match events
+- `app.coinbase.product-ids` — Comma-separated product ids (e.g. `BTC-USD,ETH-USD`)
+- `spring.kafka.bootstrap-servers` — Kafka broker address(es)
 
-spring.kafka.bootstrap-servers=localhost:9092
-```
-
-All three `app.coinbase.*` properties are required — the app will fail to start if any are missing or blank.
+All three `app.coinbase.*` properties are required; the app will fail to start if any are missing or blank.
 
 ### 3. Run the Service
 
+**Dev (Maven, `dev` profile):**
+
 ```sh
-./mvnw spring-boot:run
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-The service will connect to the Coinbase WebSocket feed on startup and begin publishing `match` events to the configured Kafka topic, keyed by `product_id`.
+**Prod (packaged JAR, `prod` profile):**
+
+```sh
+java -jar target/coinbasekafkaservice-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
+```
+
+Build the JAR first with `./mvnw package` if needed. The service connects to the Coinbase WebSocket on startup and publishes `match` events to the configured Kafka topic, keyed by `product_id`.
