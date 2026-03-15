@@ -3,6 +3,7 @@ package com.nathannli.coinbasekafkaservice.service;
 import com.nathannli.coinbasekafkaservice.config.Properties;
 import com.nathannli.coinbasekafkaservice.logging.AppLogger;
 
+import jakarta.annotation.PreDestroy;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,10 @@ import java.net.http.WebSocket;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class WebSocketService {
@@ -21,6 +25,8 @@ public class WebSocketService {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final Properties properties;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AtomicReference<WebSocket> currentWebSocket = new AtomicReference<>();
+    private final CountDownLatch closeLatch = new CountDownLatch(1);
 
     public WebSocketService(
             KafkaTemplate<String, String> kafkaTemplate,
@@ -36,7 +42,8 @@ public class WebSocketService {
 
         HttpClient client = HttpClient.newHttpClient();
 
-        client.newWebSocketBuilder()
+        try {
+            WebSocket webSocket = client.newWebSocketBuilder()
                 .buildAsync(URI.create(wsUrl), new WebSocket.Listener() {
                     private final StringBuilder buffer = new StringBuilder();
 
@@ -84,13 +91,39 @@ public class WebSocketService {
                     @Override
                     public void onError(WebSocket webSocket, Throwable error) {
                         logger.error("WebSocket error", error);
+                        closeLatch.countDown();
                     }
 
                     @Override
                     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
                         logger.warn("WebSocket closed: statusCode={}, reason={}", statusCode, reason);
+                        closeLatch.countDown();
                         return null;
                     }
-                });
+                })
+                .join();
+
+            currentWebSocket.set(webSocket);
+            closeLatch.await();
+        } catch (CompletionException e) {
+            logger.error("WebSocket connection failed", e.getCause() != null ? e.getCause() : e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.warn("WebSocket service interrupted while waiting for shutdown");
+        }
+    }
+
+    @PreDestroy
+    public void stop() {
+        WebSocket webSocket = currentWebSocket.getAndSet(null);
+        if (webSocket != null) {
+            try {
+                webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "Application shutting down").join();
+            } catch (Exception e) {
+                logger.error("Failed to close WebSocket cleanly", e);
+                webSocket.abort();
+            }
+        }
+        closeLatch.countDown();
     }
 }
