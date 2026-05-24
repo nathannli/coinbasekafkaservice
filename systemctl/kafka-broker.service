@@ -9,7 +9,7 @@ Type=simple
 Environment=KAFKA_HOME=/home/nathan/coinbasekafkaservice
 Environment=KAFKA_CONFIG=/home/nathan/coinbasekafkaservice/config/server.properties
 WorkingDirectory=/home/nathan/coinbasekafkaservice
-ExecStartPre=/home/nathan/coinbasekafkaservice/systemctl/kafka-format-storage-if-needed.sh
+ExecStartPre=/home/nathan/coinbasekafkaservice/bin/kafka-format-storage-if-needed.sh
 ExecStart=/home/nathan/coinbasekafkaservice/bin/kafka-server-start.sh /home/nathan/coinbasekafkaservice/config/server.properties
 ExecStop=/home/nathan/coinbasekafkaservice/bin/kafka-server-stop.sh
 Restart=on-failure
