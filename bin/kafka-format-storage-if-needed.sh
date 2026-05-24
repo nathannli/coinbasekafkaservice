@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-KAFKA_HOME="${KAFKA_HOME:-/home/nathan/coinbasekafkaservice}"
-KAFKA_CONFIG="${KAFKA_CONFIG:-$KAFKA_HOME/config/server.properties}"
+KAFKA_HOME="${KAFKA_HOME:-/home/nathan/kafka_2.13-4.2.0}"
+KAFKA_CONFIG="${KAFKA_CONFIG:-/home/nathan/coinbasekafkaservice/config/server.properties}"
 
 log_dirs=`sed -n 's/^[[:space:]]*log\.dirs[[:space:]]*=[[:space:]]*//p' "$KAFKA_CONFIG" | tail -1`
 

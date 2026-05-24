@@ -6,12 +6,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-Environment=KAFKA_HOME=/home/nathan/coinbasekafkaservice
+Environment=KAFKA_HOME=/home/nathan/kafka_2.13-4.2.0
 Environment=KAFKA_CONFIG=/home/nathan/coinbasekafkaservice/config/server.properties
-WorkingDirectory=/home/nathan/coinbasekafkaservice
+WorkingDirectory=/home/nathan/kafka_2.13-4.2.0
 ExecStartPre=/home/nathan/coinbasekafkaservice/bin/kafka-format-storage-if-needed.sh
-ExecStart=/home/nathan/coinbasekafkaservice/bin/kafka-server-start.sh /home/nathan/coinbasekafkaservice/config/server.properties
-ExecStop=/home/nathan/coinbasekafkaservice/bin/kafka-server-stop.sh
+ExecStart=/home/nathan/kafka_2.13-4.2.0/bin/kafka-server-start.sh /home/nathan/coinbasekafkaservice/config/server.properties
+ExecStop=/home/nathan/kafka_2.13-4.2.0/bin/kafka-server-stop.sh
 Restart=on-failure
 RestartSec=10
 SuccessExitStatus=143
