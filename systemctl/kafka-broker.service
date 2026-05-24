@@ -1,0 +1,21 @@
+[Unit]
+Description=Apache Kafka broker
+Documentation=https://kafka.apache.org/documentation/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=KAFKA_HOME=/home/nathan/coinbasekafkaservice
+Environment=KAFKA_CONFIG=/home/nathan/coinbasekafkaservice/config/server.properties
+WorkingDirectory=/home/nathan/coinbasekafkaservice
+ExecStartPre=/home/nathan/coinbasekafkaservice/systemctl/kafka-format-storage-if-needed.sh
+ExecStart=/home/nathan/coinbasekafkaservice/bin/kafka-server-start.sh /home/nathan/coinbasekafkaservice/config/server.properties
+ExecStop=/home/nathan/coinbasekafkaservice/bin/kafka-server-stop.sh
+Restart=on-failure
+RestartSec=10
+SuccessExitStatus=143
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

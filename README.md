@@ -1,5 +1,7 @@
 # Coinbase Kafka Service
 
+kafka_2.13-4.2.0
+
 A Spring Boot service that subscribes to the [Coinbase Advanced Trade WebSocket feed](https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/websocket/websocket-overview) and publishes trade match events to a Kafka topic.
 
 ## Requirements
@@ -13,13 +15,15 @@ A Spring Boot service that subscribes to the [Coinbase Advanced Trade WebSocket 
 
 ### 1. Start Kafka
 
-From your Kafka installation directory, run the included initializer script:
+Install and start the Kafka broker systemd unit:
 
 ```sh
-fish /path/to/coinbasekafkaservice/bin/initializer.fish
+sudo cp systemctl/kafka-broker.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now kafka-broker.service
 ```
 
-This formats storage and starts a standalone KRaft broker on `localhost:9092`.
+This formats storage if needed and starts a standalone KRaft broker on `localhost:9092`.
 
 ### 2. Configure the Application
 
